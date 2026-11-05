@@ -12,4 +12,75 @@ r.post('/:id/payments',async(req,res,next)=>{try{const w=await Work.findOne({_id
 r.delete('/:id/payments/:paymentId',async(req,res,next)=>{try{const w=await Work.findOne({_id:req.params.id,owner:req.user.id});if(!w)return res.status(404).json({message:'Work not found'});w.payments=w.payments.filter(p=>String(p._id)!==req.params.paymentId);await w.save();res.json(await owned(w._id,req.user.id))}catch(e){next(e)}});
 r.post('/:id/share',async(req,res,next)=>{try{const w=await Work.findOne({_id:req.params.id,owner:req.user.id});if(!w)return res.status(404).json({message:'Work not found'});w.shareToken=crypto.randomBytes(32).toString('base64url');w.shareEnabled=true;await w.save();res.json({shareToken:w.shareToken,shareUrl:`${process.env.CLIENT_URL}/status/${w.shareToken}`})}catch(e){next(e)}});
 r.post('/:id/share/disable',async(req,res,next)=>{try{const w=await Work.findOneAndUpdate({_id:req.params.id,owner:req.user.id},{shareEnabled:false},{new:true});if(!w)return res.status(404).json({message:'Work not found'});res.json({message:'Share link disabled'})}catch(e){next(e)}});
+// PATCH: Save or remove project video link
+r.patch('/:id/video', async (req, res, next) => {
+  try {
+    const { videoUrl = '' } = req.body;
+
+    // Check that videoUrl is a string
+    if (typeof videoUrl !== 'string') {
+      return res.status(400).json({
+        message: 'Invalid video URL.'
+      });
+    }
+
+    const cleanUrl = videoUrl.trim();
+
+    // Validate Google Drive URL
+    if (cleanUrl) {
+      let parsedUrl;
+
+      try {
+        parsedUrl = new URL(cleanUrl);
+      } catch {
+        return res.status(400).json({
+          message: 'Please enter a valid Google Drive link.'
+        });
+      }
+
+      const allowedHosts = [
+        'drive.google.com',
+        'docs.google.com'
+      ];
+
+      if (
+        parsedUrl.protocol !== 'https:' ||
+        !allowedHosts.includes(parsedUrl.hostname.toLowerCase())
+      ) {
+        return res.status(400).json({
+          message: 'Please enter a valid Google Drive link.'
+        });
+      }
+    }
+
+    // Find work belonging to the logged-in owner
+    const work = await Work.findOne({
+      _id: req.params.id,
+      owner: req.user.id
+    });
+
+    if (!work) {
+      return res.status(404).json({
+        message: 'Work not found.'
+      });
+    }
+
+    // Save or clear the video URL
+    work.videoUrl = cleanUrl;
+
+    await work.save();
+
+    return res.json({
+      success: true,
+      message: cleanUrl
+        ? 'Project video link saved successfully.'
+        : 'Project video link removed successfully.',
+      videoUrl: work.videoUrl
+    });
+
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default r;

@@ -1,3 +1,50 @@
 import {Router} from 'express';import Work from '../models/Work.js';
-const r=Router();r.get('/:token',async(req,res,next)=>{try{res.set('Cache-Control','no-store, no-cache, must-revalidate');const w=await Work.findOne({shareToken:req.params.token,shareEnabled:true}).populate('customer','name');if(!w)return res.status(404).json({message:'This status link is invalid or has been disabled.'});const received=w.payments.reduce((s,p)=>s+p.amount,0);res.json({customerName:w.customer?.name||'Customer',name:w.name,description:w.description,startDate:w.startDate,expectedCompletionDate:w.expectedCompletionDate,status:w.status,totalAmount:w.totalAmount,advancePaid:w.payments.filter(p=>p.type==='Advance').reduce((s,p)=>s+p.amount,0),totalReceived:received,remainingAmount:w.totalAmount-received,completed:w.completed,remaining:w.remaining,updatedAt:w.updatedAt,payments:w.payments.slice().sort((a,b)=>new Date(b.date)-new Date(a.date)).map(({type,date,amount})=>({type,date,amount})),updates:w.updates.slice().sort((a,b)=>new Date(b.date)-new Date(a.date))})}catch(e){next(e)}});
+const r=Router();
+r.get('/:token', async (req, res, next) => {
+  try {
+    const work = await Work.findOne({
+      shareToken: req.params.token,
+      shareEnabled: true
+    })
+      .populate('customer', 'name');
+
+    if (!work) {
+      return res.status(404).json({
+        message: 'Work status link not found or disabled.'
+      });
+    }
+
+    const totalReceived = work.payments.reduce(
+      (sum, payment) => sum + payment.amount,
+      0
+    );
+
+    const remainingAmount =
+      work.totalAmount - totalReceived;
+
+    return res.json({
+      name: work.name,
+      customerName: work.customer?.name || 'Customer',
+
+      status: work.status,
+
+      totalAmount: work.totalAmount,
+      totalReceived,
+      remainingAmount,
+
+      completed: work.completed,
+      remaining: work.remaining,
+
+      payments: work.payments,
+
+      // Important: Send the video URL to the customer
+      videoUrl: work.videoUrl || '',
+
+      updatedAt: work.updatedAt
+    });
+
+  } catch (error) {
+    next(error);
+  }
+});
 export default r;
