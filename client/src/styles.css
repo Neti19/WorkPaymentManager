@@ -474,3 +474,489 @@ textarea {
     gap: 8px;
   }
 }
+
+/* =====================================
+   PUBLIC PROJECT HERO WITH PAYMENT QR
+===================================== */
+
+.public-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 290px;
+  align-items: center;
+  gap: 30px;
+  padding: 38px 40px;
+  border-radius: 24px;
+  min-height: 280px;
+  box-sizing: border-box;
+}
+
+.public-hero-content {
+  min-width: 0;
+}
+
+.public-hero-content h1 {
+  margin: 20px 0 10px;
+  font-size: clamp(28px, 4vw, 36px);
+  overflow-wrap: anywhere;
+}
+
+.public-hero-content p {
+  margin-bottom: 22px;
+}
+
+/* QR Payment Panel */
+.public-payment-panel {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 18px;
+  border-radius: 18px;
+  background: #ffffff;
+  color: #18324b;
+  text-align: center;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
+}
+
+.payment-panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  margin-bottom: 10px;
+  font-size: 16px;
+  color: #18324b;
+}
+
+.payment-panel-heading svg {
+  color: #16a36a;
+}
+
+.public-qr-image {
+  display: block;
+  width: 155px;
+  height: 155px;
+  object-fit: contain;
+  margin: 8px auto;
+  background: white;
+  border-radius: 8px;
+}
+
+.qr-loading {
+  height: 155px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.public-upi-id {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 9px;
+  background: #f1f5f9;
+  border-radius: 8px;
+  overflow-wrap: anywhere;
+}
+
+.public-upi-id small {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.public-upi-id b {
+  font-size: 12px;
+  color: #18324b;
+}
+
+.public-payment-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.public-copy-btn,
+.public-pay-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 10px 7px;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+.public-copy-btn {
+  background: #e2e8f0;
+  color: #18324b;
+}
+
+.public-pay-btn {
+  background: #16a36a;
+  color: white;
+}
+
+.public-copy-btn:hover {
+  background: #cbd5e1;
+}
+
+.public-pay-btn:hover {
+  background: #128456;
+}
+
+.payment-instruction {
+  display: block;
+  margin-top: 10px;
+  color: #64748b;
+  font-size: 10px;
+}
+
+/* Dark Mode */
+.public-theme-dark .public-payment-panel {
+  background: #1e293b;
+  color: #f8fafc;
+}
+
+.public-theme-dark .payment-panel-heading {
+  color: #f8fafc;
+}
+
+.public-theme-dark .public-upi-id {
+  background: #334155;
+}
+
+.public-theme-dark .public-upi-id b {
+  color: #f8fafc;
+}
+
+.public-theme-dark .public-upi-id small,
+.public-theme-dark .payment-instruction {
+  color: #cbd5e1;
+}
+
+.public-theme-dark .public-copy-btn {
+  background: #475569;
+  color: #f8fafc;
+}
+
+/* Tablet and Mobile Responsive */
+@media (max-width: 760px) {
+  .public-hero {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    padding: 26px 22px;
+  }
+
+  .public-payment-panel {
+    max-width: 340px;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .public-hero {
+    padding: 24px 16px;
+  }
+
+  .public-hero-content h1 {
+    font-size: 27px;
+  }
+
+  .public-payment-panel {
+    max-width: 100%;
+  }
+}
+
+/* ==========================================
+   WORK & PAY - EXPANDABLE PAYMENT SECTION
+========================================== */
+
+.customer-payment-area {
+  width: 100%;
+  max-width: 290px;
+  justify-self: end;
+}
+
+/* Initial payment button */
+
+.customer-payment-open-btn {
+  width: 100%;
+  min-height: 90px;
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  border: 1px solid #e9edf4;
+  border-radius: 16px;
+  background: #ffffff;
+  color: #253149;
+  cursor: pointer;
+  text-align: left;
+  box-shadow: 0 8px 25px rgba(0,0,0,.13);
+  transition: .25s ease;
+}
+
+.customer-payment-open-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 13px 30px rgba(0,0,0,.2);
+}
+
+.customer-open-icon {
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: #e5f8ee;
+  color: #16a36a;
+}
+
+.customer-open-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.customer-open-text b {
+  font-size: 14px;
+}
+
+.customer-open-text small {
+  color: #8792a5;
+  font-size: 10px;
+}
+
+/* Expanded payment card */
+
+.customer-qr-card {
+  width: 100%;
+  padding: 17px;
+  border-radius: 18px;
+  background: #ffffff;
+  color: #18324b;
+  text-align: center;
+  box-shadow: 0 8px 28px rgba(0,0,0,.15);
+  animation: customer-payment-show .25s ease;
+}
+
+@keyframes customer-payment-show {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Card heading */
+
+.customer-qr-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  margin-bottom: 12px;
+}
+
+.customer-qr-icon {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: #e5f8ee;
+  color: #16a36a;
+}
+
+.customer-qr-heading h3 {
+  margin: 0;
+  font-size: 14px;
+  color: #18324b;
+}
+
+.customer-qr-heading p {
+  margin: 4px 0 0;
+  color: #8792a5;
+  font-size: 10px;
+}
+
+/* Close button */
+
+.customer-payment-close {
+  width: 29px;
+  height: 29px;
+  margin-left: auto;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 8px;
+  background: #f0f2f7;
+  color: #344054;
+  font-size: 21px;
+  cursor: pointer;
+}
+
+/* QR image */
+
+.customer-qr-frame {
+  width: 175px;
+  height: 175px;
+  margin: 12px auto;
+  display: grid;
+  place-items: center;
+  background: #ffffff;
+  border: 1px solid #edf0f5;
+  border-radius: 12px;
+}
+
+.customer-qr-frame img {
+  display: block;
+  width: 165px;
+  height: 165px;
+  object-fit: contain;
+}
+
+.customer-qr-loading {
+  color: #64748b;
+  font-size: 11px;
+}
+
+/* UPI information */
+
+.customer-upi-details {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 11px;
+  background: #f1f5f9;
+  border-radius: 9px;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+
+.customer-upi-details span {
+  color: #78849a;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.customer-upi-details b {
+  color: #18324b;
+  font-size: 11px;
+  margin-bottom: 5px;
+}
+
+/* Action buttons */
+
+.customer-qr-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 11px;
+}
+
+.customer-copy-btn,
+.customer-pay-btn {
+  min-width: 0;
+  min-height: 39px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px;
+  border: none;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  transition: .2s;
+}
+
+.customer-copy-btn {
+  background: #e2e8f0;
+  color: #18324b;
+}
+
+.customer-pay-btn {
+  background: #16a36a;
+  color: #ffffff;
+}
+
+.customer-copy-btn:hover {
+  background: #cbd5e1;
+}
+
+.customer-pay-btn:hover {
+  background: #128456;
+}
+
+.customer-qr-hint {
+  margin: 10px 0 0;
+  color: #8792a5;
+  font-size: 9px;
+}
+
+/* Dark mode */
+
+.public-theme-dark .customer-payment-open-btn {
+  background: #1f2937;
+  color: #f9fafb;
+  border-color: #374151;
+}
+
+.public-theme-dark .customer-open-text small {
+  color: #9ca3af;
+}
+
+.public-theme-dark .customer-qr-card {
+  background: #ffffff;
+  color: #18324b;
+}
+
+.public-theme-dark .customer-qr-heading h3 {
+  color: #18324b;
+}
+
+.public-theme-dark .customer-payment-close {
+  background: #e9edf4;
+  color: #344054;
+}
+
+/* Responsive */
+
+@media (max-width: 760px) {
+  .customer-payment-area {
+    max-width: 340px;
+    width: 100%;
+    justify-self: center;
+    margin: 0 auto;
+  }
+
+  .public-hero {
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+}
+
+@media (max-width: 480px) {
+  .customer-payment-area {
+    max-width: 100%;
+  }
+
+  .customer-qr-card {
+    padding: 14px;
+  }
+}

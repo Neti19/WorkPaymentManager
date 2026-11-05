@@ -1,5 +1,7 @@
 import React,{useEffect,useState}from'react';
 import{Routes,Route,Navigate,NavLink,useNavigate,useParams,useLocation,Link}from'react-router-dom';
+import QRCode from 'qrcode';
+import { QrCode } from 'lucide-react';
 import {
   LayoutDashboard,
   Users,
@@ -208,19 +210,37 @@ function WorkDetails(){const{id}=useParams(),[w,setW]=useState(null),[customers,
 function Payments(){const[rows,setRows]=useState([]);useEffect(()=>{api('/works').then(ws=>setRows(ws.flatMap(w=>(w.payments||[]).map(p=>({...p,workName:w.name,customer:w.customer?.name}))).sort((a,b)=>new Date(b.date)-new Date(a.date))))},[]);return <><PageHead eyebrow="FINANCIALS" title="Payments" desc="A combined view of all advances and additional payments."/><div className="section-card"><div className="table-wrap"><table><thead><tr><th>DATE</th><th>WORK / CUSTOMER</th><th>TYPE</th><th>DESCRIPTION</th><th>AMOUNT</th></tr></thead><tbody>{rows.map(p=><tr key={p._id}><td>{date(p.date)}</td><td><b>{p.workName}</b><small>{p.customer}</small></td><td><span className="type-pill">{p.type}</span></td><td>{p.description||'—'}</td><td className="positive">{money(p.amount)}</td></tr>)}</tbody></table>{!rows.length&&<div className="empty">No payments have been recorded.</div>}</div></div></>}
 
 
+
 function PublicStatus() {
   const { token } = useParams();
 
   const [data, setData] = useState(null);
   const [err, setErr] = useState('');
-  const [last, setLast] = useState(new Date());
 
-  // Customer's independent theme preference
+  const [showPaymentDetails, setShowPaymentDetails] = useState(false);
+
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem('wpm_public_theme') || 'light';
   });
 
-  // Apply and save theme
+  const upiId = 'patelmayoor151-1@oksbi';
+
+  const upiLink = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent('Work & Pay')}&cu=INR`;
+
+  const [qrCode, setQrCode] = useState('');
+
+  // Generate UPI QR code
+  useEffect(() => {
+    QRCode.toDataURL(upiLink, {
+      width: 250,
+      margin: 2,
+      errorCorrectionLevel: 'H',
+    })
+      .then(setQrCode)
+      .catch(console.error);
+  }, [upiLink]);
+
+  // Save theme preference
   useEffect(() => {
     localStorage.setItem('wpm_public_theme', theme);
   }, [theme]);
@@ -231,27 +251,40 @@ function PublicStatus() {
     );
   }
 
+  // Copy UPI ID
+ async function copyUpiId() {
+  try {
+    await navigator.clipboard.writeText(upiId);
+    alert('UPI ID copied successfully!');
+  } catch {
+    alert('Unable to copy UPI ID. Please copy it manually.');
+  }
+}
+
+  // Load customer project status
   useEffect(() => {
     let alive = true;
 
-    const load = () =>
+    const load = () => {
       api(`/public-status/${token}`)
         .then(d => {
           if (alive) {
             setData(d);
             setErr('');
-            setLast(new Date());
           }
         })
-        .catch(e => alive && setErr(e.message));
+        .catch(e => {
+          if (alive) setErr(e.message);
+        });
+    };
 
     load();
 
-    const t = setInterval(load, 20000);
+    const interval = setInterval(load, 20000);
 
     return () => {
       alive = false;
-      clearInterval(t);
+      clearInterval(interval);
     };
   }, [token]);
 
@@ -260,7 +293,6 @@ function PublicStatus() {
 
       {/* Header */}
       <div className="public-brand">
-
         <div className="brand-mark small">
           W<span>&</span>P
         </div>
@@ -270,8 +302,6 @@ function PublicStatus() {
         <button
           className="public-theme-toggle"
           onClick={toggleTheme}
-          aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-          title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
         >
           {theme === 'light' ? (
             <>
@@ -285,40 +315,128 @@ function PublicStatus() {
             </>
           )}
         </button>
-
       </div>
 
       {err ? (
-
         <div className="public-card">
           <AlertCircle />
           <h1>Status unavailable</h1>
           <p>{err}</p>
         </div>
-
       ) : !data ? (
-
         <div className="public-card">
           Loading work status…
         </div>
-
       ) : (
-
         <>
-          {/* Project information */}
-          <div className="public-hero">
-            <div className="eyebrow">
-              CUSTOMER PROJECT UPDATE
-            </div>
+          {/* Project Hero + QR Payment */}
+          
 
-            <h1>{data.name}</h1>
+{/* Project Hero + Payment Section */}
+<div className="public-hero public-hero-layout">
 
-            <p>Prepared for {data.customerName}</p>
+  {/* LEFT: Project information */}
+  <div className="public-hero-content">
+    <div className="eyebrow">
+      CUSTOMER PROJECT UPDATE
+    </div>
 
-            <Status value={data.status} />
+    <h1>{data.name}</h1>
+
+    <p>Prepared for {data.customerName}</p>
+
+    <Status value={data.status} />
+  </div>
+
+  {/* RIGHT: Payment button or payment details */}
+  <div className="customer-payment-area">
+
+    {!showPaymentDetails ? (
+      <button
+        type="button"
+        className="customer-payment-open-btn"
+        onClick={() => setShowPaymentDetails(true)}
+      >
+        <span className="customer-open-icon">
+          <QrCode size={25} />
+        </span>
+
+        <span className="customer-open-text">
+          <b>Make a Payment</b>
+          <small>View QR code and UPI details</small>
+        </span>
+
+        <ArrowUpRight size={21} />
+      </button>
+    ) : (
+      <div className="customer-qr-card">
+
+        <div className="customer-qr-heading">
+          <div className="customer-qr-icon">
+            <QrCode size={21} />
           </div>
 
-          {/* Financial summary */}
+          <div>
+            <h3>Payment Details</h3>
+            <p>Scan and pay using UPI</p>
+          </div>
+
+          <button
+            type="button"
+            className="customer-payment-close"
+            onClick={() => setShowPaymentDetails(false)}
+            aria-label="Hide payment details"
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="customer-qr-frame">
+          {qrCode ? (
+            <img src={qrCode} alt="UPI payment QR code" />
+          ) : (
+            <div className="customer-qr-loading">
+              Generating QR...
+            </div>
+          )}
+        </div>
+
+        <div className="customer-upi-details">
+          <span>PAYEE NAME</span>
+          <b>Work & Pay</b>
+
+          <span>UPI ID</span>
+          <b>{upiId}</b>
+        </div>
+
+        <div className="customer-qr-actions">
+          <button
+            type="button"
+            className="customer-copy-btn"
+            onClick={copyUpiId}
+          >
+            <Copy size={15} />
+            Copy UPI
+          </button>
+
+          <a href={upiLink} className="customer-pay-btn">
+            Pay Now
+            <ArrowUpRight size={16} />
+          </a>
+        </div>
+
+        <p className="customer-qr-hint">
+          Scan using any UPI payment application
+        </p>
+
+      </div>
+    )}
+
+  </div>
+</div>
+
+
+          {/* Financial Summary */}
           <div className="public-grid">
 
             <div className="public-card">
@@ -342,7 +460,7 @@ function PublicStatus() {
 
           </div>
 
-          {/* Work progress */}
+          {/* Work Progress */}
           <div className="public-card">
 
             <h2>Work progress</h2>
@@ -380,12 +498,12 @@ function PublicStatus() {
 
           </div>
 
-          {/* Payment history */}
+          {/* Payment History */}
           <div className="public-card">
 
             <h2>Payment history</h2>
 
-            {data.payments.map((p, i) => (
+            {(data.payments || []).map((p, i) => (
               <div className="payment-row" key={i}>
 
                 <div>
@@ -402,13 +520,15 @@ function PublicStatus() {
               </div>
             ))}
 
-          </div>
+            {(!data.payments || data.payments.length === 0) && (
+              <p className="muted">No payments recorded yet.</p>
+            )}
 
+          </div>
         </>
       )}
 
     </div>
   );
 }
-
 export default function App(){const[user,setUser]=useState(null),[checking,setChecking]=useState(true);const nav=useNavigate();useEffect(()=>{if(!localStorage.getItem('wpm_token')){setChecking(false);return}api('/auth/me').then(d=>setUser(d.user)).catch(()=>localStorage.removeItem('wpm_token')).finally(()=>setChecking(false))},[]);function logout(){localStorage.removeItem('wpm_token');setUser(null);nav('/login')}if(checking)return <div className="loading full-screen">Loading workspace…</div>;return <Routes><Route path="/status/:token" element={<PublicStatus/>}/><Route path="/login" element={user?<Navigate to="/"/>:<Auth onLogin={setUser}/>}/><Route path="/register" element={user?<Navigate to="/"/>:<Auth onLogin={setUser}/>}/><Route path="*" element={user?<Shell user={user} onLogout={logout}><Routes><Route path="/" element={<Dashboard/>}/><Route path="/customers" element={<Customers/>}/><Route path="/works" element={<Works/>}/><Route path="/works/new" element={<WorkForm/>}/><Route path="/works/:id" element={<WorkDetails/>}/><Route path="/payments" element={<Payments/>}/><Route path="*" element={<Navigate to="/"/>}/></Routes></Shell>:<Navigate to="/login"/>}/></Routes>}
