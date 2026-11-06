@@ -525,17 +525,624 @@ function Shell({ user, onLogout, children }) {
 }
 
 function PageHead({eyebrow,title,desc,action}){return <div className="page-head"><div><div className="eyebrow">{eyebrow}</div><h1>{title}</h1><p className="muted">{desc}</p></div>{action}</div>}
-function Dashboard(){const[s,setS]=useState(null),[works,setWorks]=useState([]),[err,setErr]=useState('');useEffect(()=>{Promise.all([api('/works/summary'),api('/works')]).then(([a,b])=>{setS(a);setWorks(b.slice(0,5))}).catch(e=>setErr(e.message))},[]);if(err)return <div className="alert error">{err}</div>;return <><PageHead eyebrow="OVERVIEW" title="Good work starts with clarity." desc="Here's what's happening across your workspace." action={<Link className="btn primary" to="/works/new"><Plus size={17}/> New work</Link>}/>{!s?<div className="loading">Loading your workspace…</div>:<><div className="stats-grid"><Stat icon={<Users/>} label="Customers" value={s.customers} tone="violet"/><Stat icon={<BriefcaseBusiness/>} label="Total works" value={s.works} tone="blue"/><Stat icon={<CheckCircle2/>} label="Completed" value={s.completed} tone="green"/><Stat icon={<Clock3/>} label="In progress" value={s.active} tone="amber"/></div><div className="finance-grid"><div className="finance-card dark"><div className="finance-label">Total received</div><div className="finance-value">{money(s.received)}</div><div className="finance-foot"><span className="finance-dot"/>Payments recorded across all works</div><div className="finance-orb"/></div><div className="finance-card light"><div className="finance-label">Outstanding balance</div><div className="finance-value">{money(s.outstanding)}</div><div className="finance-foot">From {s.works} work records</div><div className="progress-track"><span style={{width:`${s.totalValue?Math.min(100,s.received/s.totalValue*100):0}%`}}/></div><div className="finance-meta"><span>Received {s.totalValue?Math.round(s.received/s.totalValue*100):0}%</span><span>Total {money(s.totalValue)}</span></div></div></div><div className="section-card"><div className="section-head"><div><h2>Recent works</h2><p className="muted">Your latest customer projects</p></div><Link className="text-link" to="/works">View all <ArrowUpRight size={16}/></Link></div><WorkTable rows={works}/></div></>}</>}
+
+function Dashboard() {
+  const [s, setS] = useState(null);
+  const [works, setWorks] = useState([]);
+  const [err, setErr] = useState('');
+
+  useEffect(() => {
+    Promise.all([
+      api('/works/summary'),
+      api('/works')
+    ])
+      .then(([summary, allWorks]) => {
+        setS(summary);
+        setWorks(Array.isArray(allWorks) ? allWorks.slice(0, 5) : []);
+      })
+      .catch(e => setErr(e.message));
+  }, []);
+
+  if (err) {
+    return <div className="alert error">{err}</div>;
+  }
+
+  if (!s) {
+    return (
+      <div className="dashboard-loading">
+        <div className="loading-spinner" />
+        <p>Preparing your dashboard...</p>
+      </div>
+    );
+  }
+
+  const totalWorks = Number(s.works) || 0;
+  const completed = Number(s.completed) || 0;
+  const active = Number(s.active) || 0;
+  const pending = Math.max(0, totalWorks - completed - active);
+
+  const receivedPercent = s.totalValue
+    ? Math.min(100, Math.round((s.received / s.totalValue) * 100))
+    : 0;
+
+  const completionPercent = totalWorks
+    ? Math.round((completed / totalWorks) * 100)
+    : 0;
+
+  const today = new Date().toLocaleDateString('en-IN', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  });
+
+  return (
+    <div className="modern-dashboard">
+
+      {/* Welcome banner */}
+      <section className="dashboard-hero">
+        <div className="hero-content">
+          <span className="hero-eyebrow">
+            <span className="hero-live-dot" />
+            YOUR BUSINESS OVERVIEW
+          </span>
+
+          <h1>Welcome back!</h1>
+
+          <p>
+            Manage your projects, track payments and keep
+            everything running smoothly.
+          </p>
+
+          <div className="hero-actions">
+            <Link to="/works/new" className="hero-button">
+              <Plus size={17} />
+              Create New Work
+            </Link>
+
+            <Link to="/works" className="hero-secondary">
+              View all works <ArrowUpRight size={16} />
+            </Link>
+          </div>
+        </div>
+
+        <div className="hero-decoration">
+          <div className="hero-circle circle-one" />
+          <div className="hero-circle circle-two" />
+          <div className="hero-icon">
+            <ChartNoAxesCombined size={58} />
+          </div>
+        </div>
+
+        <div className="hero-date">
+          <CalendarDays size={15} />
+          {today}
+        </div>
+      </section>
+
+      {/* Statistics */}
+      <div className="dashboard-section-title">
+        <div>
+          <h2>Business overview</h2>
+          <p>Here is a quick look at your business performance.</p>
+        </div>
+      </div>
+
+      <div className="stats-grid modern-stats">
+        <Stat
+          icon={<Users />}
+          label="Total customers"
+          value={s.customers}
+          tone="violet"
+        />
+
+        <Stat
+          icon={<BriefcaseBusiness />}
+          label="Total works"
+          value={totalWorks}
+          tone="blue"
+        />
+
+        <Stat
+          icon={<CheckCircle2 />}
+          label="Completed works"
+          value={completed}
+          tone="green"
+        />
+
+        <Stat
+          icon={<Clock3 />}
+          label="In progress"
+          value={active}
+          tone="amber"
+        />
+      </div>
+
+      {/* Financial overview */}
+      <div className="dashboard-section-title">
+        <div>
+          <h2>Financial overview</h2>
+          <p>Monitor your received and pending payments.</p>
+        </div>
+      </div>
+
+      <div className="finance-grid modern-finance">
+
+        <div className="finance-card dark modern-finance-card">
+          <div className="finance-top">
+            <div className="finance-label">Total payments received</div>
+            <div className="finance-icon">
+              <Wallet size={20} />
+            </div>
+          </div>
+
+          <div className="finance-value">{money(s.received)}</div>
+
+          <div className="finance-foot">
+            <span className="finance-dot" />
+            Money received across all projects
+          </div>
+
+          <div className="finance-orb" />
+        </div>
+
+        <div className="finance-card light modern-finance-card">
+          <div className="finance-top">
+            <div className="finance-label">Outstanding balance</div>
+            <div className="finance-icon outstanding-icon">
+              <Clock3 size={20} />
+            </div>
+          </div>
+
+          <div className="finance-value">{money(s.outstanding)}</div>
+
+          <div className="finance-foot">
+            Remaining amount from your work records
+          </div>
+
+          <div className="progress-track">
+            <span style={{ width: `${receivedPercent}%` }} />
+          </div>
+
+          <div className="finance-meta">
+            <span>{receivedPercent}% received</span>
+            <span>Total {money(s.totalValue)}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Project progress overview */}
+      <section className="section-card project-overview">
+        <div className="section-head">
+          <div>
+            <h2>Project progress</h2>
+            <p className="muted">
+              Understand the current status of your works.
+            </p>
+          </div>
+          <Link to="/works" className="text-link">
+            Manage works <ArrowUpRight size={16} />
+          </Link>
+        </div>
+
+        <div className="project-overview-body">
+          <div className="completion-summary">
+            <div
+              className="completion-ring"
+              style={{
+                background: `conic-gradient(#7968e8 ${completionPercent * 3.6}deg, #edf0f6 0deg)`
+              }}
+            >
+              <div className="completion-ring-inner">
+                <strong>{completionPercent}%</strong>
+                <span>Completed</span>
+              </div>
+            </div>
+
+            <div>
+              <h3>{completed} of {totalWorks} works completed</h3>
+              <p>Keep tracking your projects to stay on schedule.</p>
+            </div>
+          </div>
+
+          <div className="status-breakdown">
+            <div className="breakdown-row">
+              <span className="breakdown-label">
+                <i className="breakdown-dot completed-dot" />
+                Completed
+              </span>
+              <strong>{completed}</strong>
+            </div>
+
+            <div className="breakdown-track">
+              <span
+                className="completed-bar"
+                style={{
+                  width: `${totalWorks ? completed / totalWorks * 100 : 0}%`
+                }}
+              />
+            </div>
+
+            <div className="breakdown-row">
+              <span className="breakdown-label">
+                <i className="breakdown-dot active-dot" />
+                In progress
+              </span>
+              <strong>{active}</strong>
+            </div>
+
+            <div className="breakdown-track">
+              <span
+                className="active-bar"
+                style={{
+                  width: `${totalWorks ? active / totalWorks * 100 : 0}%`
+                }}
+              />
+            </div>
+
+            <div className="breakdown-row">
+              <span className="breakdown-label">
+                <i className="breakdown-dot pending-dot" />
+                Pending
+              </span>
+              <strong>{pending}</strong>
+            </div>
+
+            <div className="breakdown-track">
+              <span
+                className="pending-bar"
+                style={{
+                  width: `${totalWorks ? pending / totalWorks * 100 : 0}%`
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Recent works */}
+      <div className="section-card recent-works-card">
+        <div className="section-head">
+          <div>
+            <h2>Recent works</h2>
+            <p className="muted">
+              Your latest customer projects and payment details.
+            </p>
+          </div>
+
+          <Link to="/works" className="text-link">
+            View all works <ArrowUpRight size={16} />
+          </Link>
+        </div>
+
+        <WorkTable rows={works} />
+      </div>
+
+    </div>
+  );
+}
+
 function Stat({icon,label,value,tone}){return <div className="stat-card"><div className={`stat-icon ${tone}`}>{icon}</div><div><div className="stat-label">{label}</div><div className="stat-value">{value}</div></div><span className="stat-arrow"><ArrowUpRight size={16}/></span></div>}
 function Status({value}){return <span className={`status ${String(value).toLowerCase().replace(' ','-')}`}><i/>{value}</span>}
 function WorkTable({rows}){return <div className="table-wrap"><table><thead><tr><th>WORK / CUSTOMER</th><th>STATUS</th><th>PROJECT VALUE</th><th>RECEIVED</th><th>REMAINING</th><th/></tr></thead><tbody>{rows.map(w=><tr key={w._id}><td><Link className="work-title" to={`/works/${w._id}`}>{w.name}</Link><small>{w.customer?.name||'Customer'} · {date(w.startDate)}</small></td><td><Status value={w.status}/></td><td>{money(w.totalAmount)}</td><td className="positive">{money(w.totalReceived)}</td><td className="remaining">{money(w.remainingAmount)}</td><td><Link className="row-arrow" to={`/works/${w._id}`}><ChevronRight size={18}/></Link></td></tr>)}</tbody></table>{!rows.length&&<div className="empty">No works yet. Create your first work to get started.</div>}</div>}
-function Customers(){const[rows,setRows]=useState([]),[q,setQ]=useState(''),[show,setShow]=useState(false),[form,setForm]=useState({name:'',instagramProfile:''}),[err,setErr]=useState('');async function load(){setRows(await api('/customers'))}useEffect(()=>{load().catch(e=>setErr(e.message))},[]);async function save(e){e.preventDefault();try{await api('/customers',{method:'POST',body:JSON.stringify(form)});setForm({name:'',instagramProfile:''});setShow(false);load()}catch(e){setErr(e.message)}}async function del(id){if(!confirm('Delete this customer?'))return;try{await api(`/customers/${id}`,{method:'DELETE'});load()}catch(e){setErr(e.message)}}const filtered=rows.filter(c=>c.name.toLowerCase().includes(q.toLowerCase()));return <><PageHead eyebrow="RELATIONSHIPS" title="Customers" desc="Keep customer details and all related work in one place." action={<button className="btn primary" onClick={()=>setShow(!show)}><Plus size={17}/> Add customer</button>}/>{err&&<div className="alert error">{err}</div>}{show&&<form className="form-card inline-form" onSubmit={save}><h3>New customer</h3><div className="form-grid"><label>Customer name<input required value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="e.g. Aarya Shah"/></label><label>Instagram profile URL<input value={form.instagramProfile} onChange={e=>setForm({...form,instagramProfile:e.target.value})} placeholder="https://instagram.com/username"/></label></div><div className="form-actions"><button className="btn primary">Save customer</button><button type="button" className="btn ghost" onClick={()=>setShow(false)}>Cancel</button></div></form>}<div className="section-card"><div className="toolbar"><div className="search-box"><Search size={17}/><input placeholder="Search customers…" value={q} onChange={e=>setQ(e.target.value)}/></div><span className="muted small-text">{filtered.length} customers</span></div><div className="table-wrap"><table><thead><tr><th>CUSTOMER</th><th>INSTAGRAM PROFILE</th><th>WORKS</th><th>ADDED</th><th/></tr></thead><tbody>{filtered.map(c=><tr key={c._id}><td><div className="customer-cell"><span className="customer-avatar">{c.name[0]?.toUpperCase()}</span><b>{c.name}</b></div></td><td>{c.instagramProfile?<a className="insta-link" href={c.instagramProfile} target="_blank" rel="noreferrer"><Instagram size={15}/> View profile <ExternalLink size={13}/></a>:<span className="muted">Not added</span>}</td><td>{c.workCount||0}</td><td>{date(c.createdAt)}</td><td><button className="icon-btn danger-text" onClick={()=>del(c._id)} title="Delete customer"><Trash2 size={17}/></button></td></tr>)}</tbody></table>{!filtered.length&&<div className="empty">No customers match your search.</div>}</div></div></>}
+
+function Customers() {
+  const [rows, setRows] = useState([]);
+  const [q, setQ] = useState('');
+  const [show, setShow] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [form, setForm] = useState({
+    name: '',
+    instagramProfile: ''
+  });
+  const [err, setErr] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  async function load() {
+    const data = await api('/customers');
+    setRows(data);
+  }
+
+  useEffect(() => {
+    load().catch(e => setErr(e.message));
+  }, []);
+
+  function openAddForm() {
+    setEditing(null);
+    setForm({ name: '', instagramProfile: '' });
+    setErr('');
+    setShow(true);
+  }
+
+  function openEditForm(customer) {
+    setEditing(customer);
+    setForm({
+      name: customer.name || '',
+      instagramProfile: customer.instagramProfile || ''
+    });
+    setErr('');
+    setShow(true);
+  }
+
+  async function save(e) {
+    e.preventDefault();
+    setSaving(true);
+    setErr('');
+
+    try {
+      if (editing) {
+        await api(`/customers/${editing._id}`, {
+          method: 'PUT',
+          body: JSON.stringify(form)
+        });
+        alert('Customer updated successfully!');
+      } else {
+        await api('/customers', {
+          method: 'POST',
+          body: JSON.stringify(form)
+        });
+        alert('Customer added successfully!');
+      }
+
+      setForm({ name: '', instagramProfile: '' });
+      setEditing(null);
+      setShow(false);
+      await load();
+
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function cancelForm() {
+    setShow(false);
+    setEditing(null);
+    setForm({ name: '', instagramProfile: '' });
+    setErr('');
+  }
+
+  async function del(id) {
+    if (!confirm('Are you sure you want to delete this customer?')) {
+      return;
+    }
+
+    try {
+      await api(`/customers/${id}`, {
+        method: 'DELETE'
+      });
+
+      alert('Customer deleted successfully!');
+      await load();
+
+    } catch (e) {
+      setErr(e.message);
+    }
+  }
+
+  const filtered = rows.filter(c =>
+    c.name.toLowerCase().includes(q.toLowerCase())
+  );
+
+  return (
+    <>
+      <PageHead
+        eyebrow="RELATIONSHIPS"
+        title="Customers"
+        desc="Keep customer details and all related work in one place."
+        action={
+          <button className="btn primary" onClick={openAddForm}>
+            <Plus size={17} /> Add customer
+          </button>
+        }
+      />
+
+      {err && <div className="alert error">{err}</div>}
+
+      {/* Add / Edit Customer Form */}
+      {show && (
+        <form className="form-card inline-form" onSubmit={save}>
+          <h3>
+            {editing ? 'Edit customer details' : 'New customer'}
+          </h3>
+
+          <div className="form-grid">
+            <label>
+              Customer name
+              <input
+                required
+                maxLength={100}
+                value={form.name}
+                onChange={e =>
+                  setForm({ ...form, name: e.target.value })
+                }
+                placeholder="e.g. Aarya Shah"
+              />
+            </label>
+
+            <label>
+              Instagram profile URL
+              <input
+                type="url"
+                maxLength={300}
+                value={form.instagramProfile}
+                onChange={e =>
+                  setForm({
+                    ...form,
+                    instagramProfile: e.target.value
+                  })
+                }
+                placeholder="https://instagram.com/username"
+              />
+            </label>
+          </div>
+
+          <div className="form-actions">
+            <button
+              className="btn primary"
+              type="submit"
+              disabled={saving}
+            >
+              {saving
+                ? 'Saving...'
+                : editing
+                  ? 'Update customer'
+                  : 'Save customer'}
+            </button>
+
+            <button
+              type="button"
+              className="btn ghost"
+              onClick={cancelForm}
+              disabled={saving}
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+
+      {/* Customer List */}
+      <div className="section-card">
+        <div className="toolbar">
+          <div className="search-box">
+            <Search size={17} />
+            <input
+              placeholder="Search customers..."
+              value={q}
+              onChange={e => setQ(e.target.value)}
+            />
+          </div>
+
+          <span className="muted small-text">
+            {filtered.length} customers
+          </span>
+        </div>
+
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>CUSTOMER</th>
+                <th>INSTAGRAM PROFILE</th>
+                <th>WORKS</th>
+                <th>ADDED</th>
+                <th>ACTIONS</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {filtered.map(c => (
+                <tr key={c._id}>
+                  <td>
+                    <div className="customer-cell">
+                      <span className="customer-avatar">
+                        {c.name[0]?.toUpperCase()}
+                      </span>
+                      <b>{c.name}</b>
+                    </div>
+                  </td>
+
+                  <td>
+                    {c.instagramProfile ? (
+                      <a
+                        className="insta-link"
+                        href={c.instagramProfile}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <Instagram size={15} />
+                        View profile
+                        <ExternalLink size={13} />
+                      </a>
+                    ) : (
+                      <span className="muted">Not added</span>
+                    )}
+                  </td>
+
+                  <td>{c.workCount || 0}</td>
+
+                  <td>{date(c.createdAt)}</td>
+
+                  <td>
+                    <div className="customer-actions">
+                      <button
+                        className="icon-btn"
+                        title="Edit customer"
+                        onClick={() => openEditForm(c)}
+                      >
+                        <Edit3 size={17} />
+                      </button>
+
+                      <button
+                        className="icon-btn danger-text"
+                        title="Delete customer"
+                        onClick={() => del(c._id)}
+                      >
+                        <Trash2 size={17} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {!filtered.length && (
+            <div className="empty">
+              No customers match your search.
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
 function WorkForm(){const nav=useNavigate(),[customers,setCustomers]=useState([]),[err,setErr]=useState(''),[f,setF]=useState({customer:'',name:'',description:'',startDate:new Date().toISOString().slice(0,10),expectedCompletionDate:'',totalAmount:'',status:'Pending',completed:'',remaining:''});useEffect(()=>{api('/customers').then(c=>{setCustomers(c);if(c[0])setF(x=>({...x,customer:c[0]._id}))}).catch(e=>setErr(e.message))},[]);async function submit(e){e.preventDefault();try{const w=await api('/works',{method:'POST',body:JSON.stringify(f)});nav(`/works/${w._id}`)}catch(e){setErr(e.message)}}return <><PageHead eyebrow="PROJECT SETUP" title="Create a work" desc="Add the project details and agree on the expected value."/><form className="form-card" onSubmit={submit}>{err&&<div className="alert error">{err}</div>}<div className="form-grid"><label>Customer<select required value={f.customer} onChange={e=>setF({...f,customer:e.target.value})}><option value="">Select customer</option>{customers.map(c=><option value={c._id} key={c._id}>{c.name}</option>)}</select></label><label>Work name<input required value={f.name} onChange={e=>setF({...f,name:e.target.value})} placeholder="e.g. Website redesign"/></label><label>Start date<input type="date" value={f.startDate} onChange={e=>setF({...f,startDate:e.target.value})}/></label><label>Expected completion<input type="date" value={f.expectedCompletionDate} onChange={e=>setF({...f,expectedCompletionDate:e.target.value})}/></label><label>Total work amount (₹)<input type="number" min="0.01" step="0.01" required value={f.totalAmount} onChange={e=>setF({...f,totalAmount:e.target.value})} placeholder="0.00"/></label><label>Current status<select value={f.status} onChange={e=>setF({...f,status:e.target.value})}><option>Pending</option><option>In Progress</option><option>Completed</option></select></label><label className="span-2">Work description<textarea rows="3" value={f.description} onChange={e=>setF({...f,description:e.target.value})}/></label><label>Completed work<textarea rows="3" value={f.completed} onChange={e=>setF({...f,completed:e.target.value})}/></label><label>Remaining work<textarea rows="3" value={f.remaining} onChange={e=>setF({...f,remaining:e.target.value})}/></label></div><div className="form-actions"><button className="btn primary">Create work</button><button type="button" className="btn ghost" onClick={()=>nav('/works')}>Cancel</button></div></form></>}
 function Works()
 {const[rows,setRows]=useState([]),[q,setQ]=useState('');useEffect(()=>{api('/works').then(setRows).catch(()=>{})},[]);return <><PageHead eyebrow="PROJECTS" title="Works" desc="Track delivery, payments and balances for every project." action={<Link className="btn primary" to="/works/new"><Plus size={17}/> 
 New work</Link>}/>
 <div className="section-card"><div className="toolbar"><div className="search-box"><Search size={17}/><input placeholder="Search work or customer…" value={q} onChange={e=>setQ(e.target.value)}/></div><span className="muted small-text">{rows.length} total</span></div><WorkTable rows={rows.filter(w=>(w.name+' '+(w.customer?.name||'')).toLowerCase().includes(q.toLowerCase()))}/></div></>}
-function WorkDetails(){const{id}=useParams(),[w,setW]=useState(null),[customers,setCustomers]=useState([]),[err,setErr]=useState(''),[share,setShare]=useState(''),[payment,setPayment]=useState({type:'Advance',date:new Date().toISOString().slice(0,10),amount:'',description:''}),[progress,setProgress]=useState({completed:'',remaining:'',status:'Pending'});async function load(){const x=await api(`/works/${id}`);setW(x);setProgress({completed:x.completed||'',remaining:x.remaining||'',status:x.status})}useEffect(()=>{load().catch(e=>setErr(e.message));api('/customers').then(setCustomers)},[id]);if(!w)return <div className="alert error">{err||'Loading work…'}</div>;
+function WorkDetails(){
+  const [editing, setEditing] = useState(false);
+const [saving, setSaving] = useState(false);
+
+const [editForm, setEditForm] = useState({
+  customer: '',
+  name: '',
+  description: '',
+  startDate: '',
+  expectedCompletionDate: '',
+  totalAmount: '',
+  status: 'Pending'
+});
+  
+  const{id}=useParams(),[w,setW]=useState(null),[customers,setCustomers]=useState([]),[err,setErr]=useState(''),[share,setShare]=useState(''),[payment,setPayment]=useState({type:'Advance',date:new Date().toISOString().slice(0,10),amount:'',description:''}),[progress,setProgress]=useState({completed:'',remaining:'',status:'Pending'});
+async function load() {
+  const x = await api(`/works/${id}`);
+
+  setW(x);
+
+  setProgress({
+    completed: x.completed || '',
+    remaining: x.remaining || '',
+    status: x.status
+  });
+
+  setEditForm({
+    customer: x.customer?._id || x.customer || '',
+    name: x.name || '',
+    description: x.description || '',
+    startDate: x.startDate ? String(x.startDate).slice(0, 10) : '',
+    expectedCompletionDate: x.expectedCompletionDate
+      ? String(x.expectedCompletionDate).slice(0, 10)
+      : '',
+    totalAmount: x.totalAmount ?? '',
+    status: x.status || 'Pending'
+  });
+}
+  useEffect(()=>{load().catch(e=>setErr(e.message));api('/customers').then(setCustomers)},[id]);if(!w)return <div className="alert error">{err||'Loading work…'}</div>;
 async function addPayment(e){e.preventDefault();try{await api(`/works/${id}/payments`,{method:'POST',body:JSON.stringify(payment)});
 alert('Payment details added successfully!');
 setPayment({...payment,amount:'',description:''});load()}catch(e){setErr(e.message)}}
@@ -563,7 +1170,178 @@ async function saveVideoLink(e) {
     setErr(error.message);
   }
 }
-async function shareLink(){try{const d=await api(`/works/${id}/share`,{method:'POST'});setShare(d.shareUrl);await navigator.clipboard.writeText(d.shareUrl)}catch(e){setErr(e.message)}}async function disable(){await api(`/works/${id}/share/disable`,{method:'POST'});setShare('');load()}return <><PageHead eyebrow="WORK DETAILS" title={w.name} desc={`${w.customer?.name||'Customer'} · Started ${date(w.startDate)}`} action={<Link className="btn ghost" to="/works">← All works</Link>}/>{err&&<div className="alert error">{err}</div>}<div className="detail-stats"><div><small>PROJECT VALUE</small><b>{money(w.totalAmount)}</b></div><div><small>TOTAL RECEIVED</small><b className="positive">{money(w.totalReceived)}</b></div><div><small>REMAINING</small><b className="remaining">{money(w.remainingAmount)}</b></div><div><small>STATUS</small><Status value={w.status}/></div></div><div className="two-col"><div className="section-card"><div className="section-head"><div><h2>Record a payment</h2><p className="muted">Add an advance or additional payment</p></div><Wallet/></div><form className="stack-form" onSubmit={addPayment}><label>Payment type<select value={payment.type} onChange={e=>setPayment({...payment,type:e.target.value})}><option>Advance</option><option>Additional</option></select></label><label>Payment date<input type="date" value={payment.date} onChange={e=>setPayment({...payment,date:e.target.value})}/></label><label>Amount (₹)<input type="number" required min="0.01" step="0.01" value={payment.amount} onChange={e=>setPayment({...payment,amount:e.target.value})}/></label><label>Description<textarea rows="2" value={payment.description} onChange={e=>setPayment({...payment,description:e.target.value})} placeholder="Optional note"/></label><button className="btn primary">Save payment</button></form><div className="subsection"><h3>Payment history</h3>{w.payments?.length?w.payments.slice().reverse().map(p=><div className="payment-row" key={p._id}><div><b>{p.type}</b><small>{date(p.date)} {p.description&&`· ${p.description}`}</small></div><strong>{money(p.amount)}</strong><button className="icon-btn danger-text" onClick={async()=>{if(confirm('Delete this payment?')){await api(`/works/${id}/payments/${p._id}`,{method:'DELETE'});load()}}}><Trash2 size={15}/></button></div>):<div className="empty compact">No payments recorded.</div>}</div></div><div className="section-card"><div className="section-head">
+
+async function saveWork(e) {
+  e.preventDefault();
+  setSaving(true);
+
+  try {
+    await api(`/works/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(editForm)
+    });
+
+    alert('Work details updated successfully!');
+
+    setEditing(false);
+    await load();
+
+  } catch (e) {
+    setErr(e.message);
+  } finally {
+    setSaving(false);
+  }
+}
+async function shareLink(){try{const d=await api(`/works/${id}/share`,{method:'POST'});setShare(d.shareUrl);await navigator.clipboard.writeText(d.shareUrl)}catch(e){setErr(e.message)}}async function disable(){await api(`/works/${id}/share/disable`,{method:'POST'});setShare('');load()}return <>
+<PageHead
+  eyebrow="WORK DETAILS"
+  title={w.name}
+  desc={`${w.customer?.name || 'Customer'} · Started ${date(w.startDate)}`}
+  action={
+    <div className="form-actions">
+      <button
+        className="btn primary"
+        type="button"
+        onClick={() => setEditing(true)}
+      >
+        <Edit3 size={16} />
+        Edit Work
+      </button>
+
+      <Link className="btn ghost" to="/works">
+        ← All works
+      </Link>
+    </div>
+  }
+/>
+{err&&<div className="alert error">{err}
+  </div>}
+  {editing && (
+  <form className="form-card" onSubmit={saveWork}>
+
+    <h2>Edit Work Details</h2>
+
+    <div className="form-grid">
+
+      <label>
+        Customer
+        <select
+          required
+          value={editForm.customer}
+          onChange={e =>
+            setEditForm({...editForm, customer: e.target.value})
+          }
+        >
+          <option value="">Select customer</option>
+
+          {customers.map(c => (
+            <option value={c._id} key={c._id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label>
+        Work name
+        <input
+          required
+          value={editForm.name}
+          onChange={e =>
+            setEditForm({...editForm, name: e.target.value})
+          }
+        />
+      </label>
+
+      <label>
+        Start date
+        <input
+          type="date"
+          value={editForm.startDate}
+          onChange={e =>
+            setEditForm({...editForm, startDate: e.target.value})
+          }
+        />
+      </label>
+
+      <label>
+        Expected completion
+        <input
+          type="date"
+          value={editForm.expectedCompletionDate}
+          onChange={e =>
+            setEditForm({
+              ...editForm,
+              expectedCompletionDate: e.target.value
+            })
+          }
+        />
+      </label>
+
+      <label>
+        Total work amount (₹)
+        <input
+          type="number"
+          min="0.01"
+          step="0.01"
+          required
+          value={editForm.totalAmount}
+          onChange={e =>
+            setEditForm({...editForm, totalAmount: e.target.value})
+          }
+        />
+      </label>
+
+      <label>
+        Current status
+        <select
+          value={editForm.status}
+          onChange={e =>
+            setEditForm({...editForm, status: e.target.value})
+          }
+        >
+          <option>Pending</option>
+          <option>In Progress</option>
+          <option>Completed</option>
+        </select>
+      </label>
+
+      <label className="span-2">
+        Work description
+        <textarea
+          rows="4"
+          value={editForm.description}
+          onChange={e =>
+            setEditForm({...editForm, description: e.target.value})
+          }
+        />
+      </label>
+
+    </div>
+
+    <div className="form-actions">
+
+      <button
+        className="btn primary"
+        type="submit"
+        disabled={saving}
+      >
+        {saving ? 'Saving...' : 'Save Changes'}
+      </button>
+
+      <button
+        type="button"
+        className="btn ghost"
+        onClick={() => setEditing(false)}
+      >
+        Cancel
+      </button>
+
+    </div>
+
+  </form>
+)}
+  <div className="detail-stats"><div><small>PROJECT VALUE</small><b>{money(w.totalAmount)}</b></div><div><small>TOTAL RECEIVED</small><b className="positive">{money(w.totalReceived)}</b></div><div><small>REMAINING</small><b className="remaining">{money(w.remainingAmount)}</b></div><div><small>STATUS</small><Status value={w.status}/></div></div><div className="two-col"><div className="section-card"><div className="section-head"><div><h2>Record a payment</h2><p className="muted">Add an advance or additional payment</p></div><Wallet/></div><form className="stack-form" onSubmit={addPayment}><label>Payment type<select value={payment.type} onChange={e=>setPayment({...payment,type:e.target.value})}><option>Advance</option><option>Additional</option></select></label><label>Payment date<input type="date" value={payment.date} onChange={e=>setPayment({...payment,date:e.target.value})}/></label><label>Amount (₹)<input type="number" required min="0.01" step="0.01" value={payment.amount} onChange={e=>setPayment({...payment,amount:e.target.value})}/></label><label>Description<textarea rows="2" value={payment.description} onChange={e=>setPayment({...payment,description:e.target.value})} placeholder="Optional note"/></label><button className="btn primary">Save payment</button></form><div className="subsection"><h3>Payment history</h3>{w.payments?.length?w.payments.slice().reverse().map(p=><div className="payment-row" key={p._id}><div><b>{p.type}</b><small>{date(p.date)} {p.description&&`· ${p.description}`}</small></div><strong>{money(p.amount)}</strong><button className="icon-btn danger-text" onClick={async()=>{if(confirm('Delete this payment?')){await api(`/works/${id}/payments/${p._id}`,{method:'DELETE'});load()}}}><Trash2 size={15}/></button></div>):<div className="empty compact">No payments recorded.</div>}</div></div><div className="section-card"><div className="section-head">
   <div><h2>Work progress</h2><p className="muted">Keep the customer status up to date</p></div><ChartNoAxesCombined/></div><form className="stack-form" onSubmit={updateProgress}><label>Status<select value={progress.status} onChange={e=>setProgress({...progress,status:e.target.value})}><option>Pending</option><option>In Progress</option><option>Completed</option></select></label><label>Completed work<textarea rows="4" value={progress.completed} onChange={e=>setProgress({...progress,completed:e.target.value})}/></label><label>Remaining work<textarea rows="4" value={progress.remaining} onChange={e=>setProgress({...progress,remaining:e.target.value})}/></label><button className="btn primary">Update progress</button></form>
   
 <div className="subsection">
